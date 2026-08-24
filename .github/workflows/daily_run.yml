@@ -5,6 +5,7 @@ on:
     - cron: '30 11 * * 0-6'  # सोमवार से शुक्रवार शाम 5:30 बजे IST (11:30 AM UTC)
   workflow_dispatch:
 
+
 jobs:
   run-scanner:
     runs-on: ubuntu-latest
