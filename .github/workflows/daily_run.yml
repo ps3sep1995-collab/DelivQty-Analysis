@@ -2,7 +2,7 @@ name: Daily Bhavcopy Scanner
 
 on:
   schedule:
-    - cron: '30 11 * * 1-5'  # सोमवार से शुक्रवार शाम 5:30 बजे IST (11:30 AM UTC)
+    - cron: '30 11 * * 0-6'  # सोमवार से शुक्रवार शाम 5:30 बजे IST (11:30 AM UTC)
   workflow_dispatch:
 
 jobs:
