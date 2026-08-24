@@ -57,7 +57,7 @@ def download_last_2_years_fno_data():
 
     # आज से ठीक 2 साल (730 दिन) पहले की तारीख
     today = datetime.now()
-    start_date = today - timedelta(days=730)
+    start_date = today - timedelta(days=365)
     current_date = start_date
 
     downloaded_count = 0
