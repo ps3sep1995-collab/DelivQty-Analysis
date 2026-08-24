@@ -1,12 +1,13 @@
 import os
 import glob
+import json
 import pandas as pd
-import numpy as np
 
 def run_breakout_processor():
     raw_dir = "data/raw"
     output_dir = "data/processed"
-    output_file = os.path.join(output_dir, "volume_breakout_scan.csv")
+    output_csv = os.path.join(output_dir, "volume_breakout_scan.csv")
+    output_json = os.path.join(output_dir, "full_history_data.json")
 
     files = sorted(glob.glob(os.path.join(raw_dir, "*.csv")))
     if not files:
@@ -28,7 +29,7 @@ def run_breakout_processor():
             df['DELIV_QTY'] = pd.to_numeric(df[vol_col], errors='coerce').fillna(0)
             
             close_col = 'CLOSE_PRICE' if 'CLOSE_PRICE' in df.columns else 'CLOSE'
-            prev_col = 'PREV_CLOSE' if 'PREV_CLOSE' in df.columns me else 'PREVCLOSE'
+            prev_col = 'PREV_CLOSE' if 'PREV_CLOSE' in df.columns else 'PREVCLOSE'
             
             df['CLOSE'] = pd.to_numeric(df.get(close_col, 0), errors='coerce').fillna(0)
             df['PREVCLOSE'] = pd.to_numeric(df.get(prev_col, 0), errors='coerce').fillna(0)
@@ -47,13 +48,21 @@ def run_breakout_processor():
     bhav_df = pd.concat(all_dfs, ignore_index=True)
     bhav_df = bhav_df.sort_values(['SYMBOL', 'DATE']).reset_index(drop=True)
 
-    # Calculate Moving Averages (Shift 1 to exclude current day)
+    # 1. Popup के लिए पूरे इतिहास का JSON बनाएं
+    history_dict = {}
+    for symbol, group in bhav_df.groupby('SYMBOL'):
+        history_dict[symbol] = group.sort_values('DATE', ascending=False).to_dict(orient='records')
+
+    os.makedirs(output_dir, exist_ok=True)
+    with open(output_json, 'w', encoding='utf-8') as f:
+        json.dump(history_dict, f)
+
+    # 2. Moving Averages (2D, 5D, 7D, 10D)
     bhav_df['AVG_2D'] = bhav_df.groupby('SYMBOL')['DELIV_QTY'].transform(lambda x: x.shift(1).rolling(2).mean())
     bhav_df['AVG_5D'] = bhav_df.groupby('SYMBOL')['DELIV_QTY'].transform(lambda x: x.shift(1).rolling(5).mean())
     bhav_df['AVG_7D'] = bhav_df.groupby('SYMBOL')['DELIV_QTY'].transform(lambda x: x.shift(1).rolling(7).mean())
     bhav_df['AVG_10D'] = bhav_df.groupby('SYMBOL')['DELIV_QTY'].transform(lambda x: x.shift(1).rolling(10).mean())
 
-    # Check 2x Breakout in 2D, 5D, 7D, or 10D
     def check_breakout(r):
         signals = []
         d = r['DELIV_QTY']
@@ -65,12 +74,9 @@ def run_breakout_processor():
 
     bhav_df['BREAKOUT_TYPE'] = bhav_df.apply(check_breakout, axis=1)
 
-    # Filter only Breakout rows
     scan_df = bhav_df[bhav_df['BREAKOUT_TYPE'] != "NO"].copy()
-
-    os.makedirs(output_dir, exist_ok=True)
-    scan_df.to_csv(output_file, index=False)
-    print(f"🎉 2x Breakout स्कैन तैयार है: `{output_file}`")
+    scan_df.to_csv(output_csv, index=False)
+    print(f"🎉 Breakout CSV और Full History JSON सफलता से बन गए हैं!")
 
 if __name__ == "__main__":
     run_breakout_processor()
