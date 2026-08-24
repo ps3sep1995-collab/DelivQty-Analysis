@@ -10,15 +10,22 @@
         h2 { color: #00e676; text-align: center; }
         .filter-box { background: #1e1e1e; padding: 15px; border-radius: 8px; display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
         label { font-size: 14px; color: #bbb; }
-        input, select, button { padding: 8px 12px; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: #fff; }
+        input, button { padding: 8px 12px; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: #fff; }
         button { background: #00e676; color: #000; font-weight: bold; cursor: pointer; border: none; }
         button:hover { background: #00c853; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #1e1e1e; }
         th, td { padding: 10px; border: 1px solid #333; text-align: center; font-size: 14px; }
         th { background: #2d2d2d; color: #00e676; }
+        tbody tr { cursor: pointer; }
+        tbody tr:hover { background: #2c2c2c; }
         .green { color: #00e676; font-weight: bold; }
         .red { color: #ff5252; font-weight: bold; }
         .badge { background: #333; padding: 3px 6px; border-radius: 4px; border: 1px solid #00e676; }
+
+        /* Popup (Modal) CSS */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); }
+        .modal-content { background-color: #1e1e1e; margin: 5% auto; padding: 20px; border: 1px solid #00e676; width: 80%; max-width: 700px; border-radius: 8px; }
+        .close-btn { color: #ff5252; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -27,19 +34,19 @@
 
     <div class="filter-box">
         <div>
-            <label>तारीख चुने (Single Date):</label><br>
+            <label>तारीख चुने:</label><br>
             <input type="date" id="singleDate">
         </div>
         <div>
-            <label>शुरुआती तारीख (From Date):</label><br>
+            <label>From Date:</label><br>
             <input type="date" id="fromDate">
         </div>
         <div>
-            <label>अंतिम तारीख (To Date):</label><br>
+            <label>To Date:</label><br>
             <input type="date" id="toDate">
         </div>
         <div>
-            <label>स्टॉक सिंबल (Symbol):</label><br>
+            <label>Symbol:</label><br>
             <input type="text" id="symbolSearch" placeholder="उदा. RELIANCE">
         </div>
         <div>
@@ -67,10 +74,31 @@
         </tbody>
     </table>
 
+    <!-- Popup Modal Structure -->
+    <div id="historyModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <h3 id="modalTitle" style="color:#00e676;"></h3>
+            <p style="font-size:12px; color:#aaa;">(पिछला 10 दिनों का सामान्य डेटा बिना किसी फ़िल्टर के)</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>DATE</th>
+                        <th>CLOSE</th>
+                        <th>% CHANGE</th>
+                        <th>DELIVERY QTY</th>
+                    </tr>
+                </thead>
+                <tbody id="modalTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
     <script>
         let rawData = [];
+        let fullHistory = {};
 
-        // Load Processed CSV
+        // 1. Load Breakout CSV
         Papa.parse("data/processed/volume_breakout_scan.csv", {
             download: true,
             header: true,
@@ -80,10 +108,15 @@
             }
         });
 
+        // 2. Load Full History JSON
+        fetch("data/processed/full_history_data.json")
+            .then(res => res.json())
+            .then(data => fullHistory = data)
+            .catch(err => console.log("JSON Load Error:", err));
+
         function displayData(data) {
             const tbody = document.getElementById("tableBody");
             tbody.innerHTML = "";
-
             document.getElementById("stats").innerText = `कुल रिकॉर्ड्स: ${data.length}`;
 
             if(data.length === 0) {
@@ -95,6 +128,9 @@
                 const pct = parseFloat(row.PCT_CHANGE || 0);
                 const pctClass = pct >= 0 ? 'green' : 'red';
                 const tr = document.createElement("tr");
+
+                // Add Click Event to open Popup
+                tr.onclick = () => openHistoryPopup(row.SYMBOL, row.DATE);
 
                 tr.innerHTML = `
                     <td>${row.DATE}</td>
@@ -108,6 +144,44 @@
             });
         }
 
+        function openHistoryPopup(symbol, selectedDate) {
+            const modal = document.getElementById("historyModal");
+            const modalTitle = document.getElementById("modalTitle");
+            const modalTbody = document.getElementById("modalTableBody");
+
+            modalTitle.innerText = `📈 ${symbol} - Last 10 Days History`;
+            modalTbody.innerHTML = "";
+
+            if (fullHistory[symbol]) {
+                // Filter records up to selected date and get top 10
+                let stockHistory = fullHistory[symbol]
+                    .filter(item => item.DATE <= selectedDate)
+                    .slice(0, 10);
+
+                stockHistory.forEach(r => {
+                    const pct = parseFloat(r.PCT_CHANGE || 0);
+                    const pctClass = pct >= 0 ? 'green' : 'red';
+                    const tr = document.createElement("tr");
+
+                    tr.innerHTML = `
+                        <td>${r.DATE}</td>
+                        <td>${r.CLOSE}</td>
+                        <td class="${pctClass}">${pct}%</td>
+                        <td>${parseInt(r.DELIV_QTY).toLocaleString()}</td>
+                    `;
+                    modalTbody.appendChild(tr);
+                });
+            } else {
+                modalTbody.innerHTML = `<tr><td colspan="4">हिस्ट्री डेटा उपलब्ध नहीं है!</td></tr>`;
+            }
+
+            modal.style.display = "block";
+        }
+
+        function closeModal() {
+            document.getElementById("historyModal").style.display = "none";
+        }
+
         function applyFilters() {
             const singleDate = document.getElementById("singleDate").value;
             const fromDate = document.getElementById("fromDate").value;
@@ -115,20 +189,9 @@
             const symbol = document.getElementById("symbolSearch").value.trim().toUpperCase();
 
             let filtered = rawData;
-
-            // Single Date Filter
-            if (singleDate) {
-                filtered = filtered.filter(r => r.DATE === singleDate);
-            }
-            // Date to Date Range Filter
-            else if (fromDate && toDate) {
-                filtered = filtered.filter(r => r.DATE >= fromDate && r.DATE <= toDate);
-            }
-
-            // Symbol Filter
-            if (symbol) {
-                filtered = filtered.filter(r => r.SYMBOL.includes(symbol));
-            }
+            if (singleDate) filtered = filtered.filter(r => r.DATE === singleDate);
+            else if (fromDate && toDate) filtered = filtered.filter(r => r.DATE >= fromDate && r.DATE <= toDate);
+            if (symbol) filtered = filtered.filter(r => r.SYMBOL.includes(symbol));
 
             displayData(filtered);
         }
