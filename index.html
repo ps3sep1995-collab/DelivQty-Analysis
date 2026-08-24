@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F&O Delivery 2x Breakout Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background: #121212; color: #fff; margin: 20px; }
+        h2 { color: #00e676; text-align: center; }
+        .filter-box { background: #1e1e1e; padding: 15px; border-radius: 8px; display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+        label { font-size: 14px; color: #bbb; }
+        input, select, button { padding: 8px 12px; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: #fff; }
+        button { background: #00e676; color: #000; font-weight: bold; cursor: pointer; border: none; }
+        button:hover { background: #00c853; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #1e1e1e; }
+        th, td { padding: 10px; border: 1px solid #333; text-align: center; font-size: 14px; }
+        th { background: #2d2d2d; color: #00e676; }
+        .green { color: #00e676; font-weight: bold; }
+        .red { color: #ff5252; font-weight: bold; }
+        .badge { background: #333; padding: 3px 6px; border-radius: 4px; border: 1px solid #00e676; }
+    </style>
+</head>
+<body>
+
+    <h2>📊 F&O 2x Delivery Breakout Scanner</h2>
+
+    <div class="filter-box">
+        <div>
+            <label>तारीख चुने (Single Date):</label><br>
+            <input type="date" id="singleDate">
+        </div>
+        <div>
+            <label>शुरुआती तारीख (From Date):</label><br>
+            <input type="date" id="fromDate">
+        </div>
+        <div>
+            <label>अंतिम तारीख (To Date):</label><br>
+            <input type="date" id="toDate">
+        </div>
+        <div>
+            <label>स्टॉक सिंबल (Symbol):</label><br>
+            <input type="text" id="symbolSearch" placeholder="उदा. RELIANCE">
+        </div>
+        <div>
+            <br>
+            <button onclick="applyFilters()">फ़िल्टर लागू करें</button>
+            <button onclick="resetFilters()" style="background:#ff5252; color:#fff;">रीसेट</button>
+        </div>
+    </div>
+
+    <div id="stats" style="margin-bottom: 10px; color: #aaa;">लोड हो रहा है...</div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>DATE</th>
+                <th>SYMBOL</th>
+                <th>CLOSE</th>
+                <th>% CHANGE</th>
+                <th>DELIVERY QTY</th>
+                <th>BREAKOUT TYPE</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            <tr><td colspan="6">डेटा लोड हो रहा है...</td></tr>
+        </tbody>
+    </table>
+
+    <script>
+        let rawData = [];
+
+        // Load Processed CSV
+        Papa.parse("data/processed/volume_breakout_scan.csv", {
+            download: true,
+            header: true,
+            complete: function(results) {
+                rawData = results.data.filter(r => r.SYMBOL);
+                displayData(rawData);
+            }
+        });
+
+        function displayData(data) {
+            const tbody = document.getElementById("tableBody");
+            tbody.innerHTML = "";
+
+            document.getElementById("stats").innerText = `कुल रिकॉर्ड्स: ${data.length}`;
+
+            if(data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6">कोई डेटा नहीं मिला!</td></tr>`;
+                return;
+            }
+
+            data.forEach(row => {
+                const pct = parseFloat(row.PCT_CHANGE || 0);
+                const pctClass = pct >= 0 ? 'green' : 'red';
+                const tr = document.createElement("tr");
+
+                tr.innerHTML = `
+                    <td>${row.DATE}</td>
+                    <td><strong>${row.SYMBOL}</strong></td>
+                    <td>${row.CLOSE}</td>
+                    <td class="${pctClass}">${pct}%</td>
+                    <td>${parseInt(row.DELIV_QTY).toLocaleString()}</td>
+                    <td><span class="badge">${row.BREAKOUT_TYPE}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function applyFilters() {
+            const singleDate = document.getElementById("singleDate").value;
+            const fromDate = document.getElementById("fromDate").value;
+            const toDate = document.getElementById("toDate").value;
+            const symbol = document.getElementById("symbolSearch").value.trim().toUpperCase();
+
+            let filtered = rawData;
+
+            // Single Date Filter
+            if (singleDate) {
+                filtered = filtered.filter(r => r.DATE === singleDate);
+            }
+            // Date to Date Range Filter
+            else if (fromDate && toDate) {
+                filtered = filtered.filter(r => r.DATE >= fromDate && r.DATE <= toDate);
+            }
+
+            // Symbol Filter
+            if (symbol) {
+                filtered = filtered.filter(r => r.SYMBOL.includes(symbol));
+            }
+
+            displayData(filtered);
+        }
+
+        function resetFilters() {
+            document.getElementById("singleDate").value = "";
+            document.getElementById("fromDate").value = "";
+            document.getElementById("toDate").value = "";
+            document.getElementById("symbolSearch").value = "";
+            displayData(rawData);
+        }
+    </script>
+</body>
+</html>
