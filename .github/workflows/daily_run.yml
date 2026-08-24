@@ -2,12 +2,15 @@ name: Daily Bhavcopy Scanner
 
 on:
   schedule:
-    - cron: '30 13 * * 1-5'  # सोमवार से शुक्रवार शाम 7:00 बजे IST
-  workflow_dispatch:          # गिटहब UI से मैनुअल बटन द्वारा चलाने के लिए
+    - cron: '30 13 * * 1-5'
+  workflow_dispatch:
 
 jobs:
   run-scanner:
     runs-on: ubuntu-latest
+    permissions:               # 🚨 यह ब्लॉक ज़रूर जोड़ें
+      contents: write
+      
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -23,6 +26,9 @@ jobs:
 
       - name: Download Bhavcopy Data
         run: python 1_download_data.py
+
+      - name: Process Scan Data
+        run: python 2_process_data.py
 
       - name: Commit and Push Changes
         run: |
