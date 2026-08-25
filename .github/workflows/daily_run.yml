@@ -2,44 +2,40 @@ name: Daily Bhavcopy Scanner
 
 on:
   schedule:
-    - cron: '30 11 * * 0-6'  # सोमवार से शुक्रवार शाम 5:30 बजे IST (11:30 AM UTC)
-  workflow_dispatch:
-
+    - cron: '30 13 * * 1-5' # सोमवार से शुक्रवार
+  workflow_dispatch: # मैनुअल रन करने के लिए
 
 jobs:
-  run-scanner:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
     steps:
-      - name: Checkout Repo
+      - name: Check out repository
         uses: actions/checkout@v3
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: |
-          pip install requests pandas numpy
+          pip install pandas numpy requests
 
-      - name: Download Bhavcopy Data
+      # 🚨 यहाँ नीचे इन लाइनों को पेस्ट करें 🚨
+      - name: Clean Old Processed Data
+        run: |
+          rm -rf data/processed/*
+          
+      - name: Run Data Downloader
         run: python 1_download_data.py
 
-      - name: Process Scan Data
+      - name: Run Data Processor
         run: python 2_process_data.py
 
       - name: Commit and Push Changes
         run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add data/
-          if ! git diff --staged --quiet; then
-            git commit -m "Auto-update Bhavcopy & Scan Reports"
-            git pull --rebase origin main -X ours
-            git push
-          else
-            echo "No changes to commit"
-          fi
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Auto-update deliverable breakout data" || exit 0
+          git push
