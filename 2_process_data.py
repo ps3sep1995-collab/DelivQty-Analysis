@@ -25,8 +25,13 @@ def run_breakout_processor():
             sym_col = [c for c in df.columns if 'SYMBOL' in c or 'TICKER' in c][0]
             df['SYMBOL'] = df[sym_col].astype(str).str.strip().str.upper()
 
-            vol_col = [c for c in df.columns if 'DELIV' in c or 'TOTTRDQTY' in c][0]
-            df['DELIV_QTY'] = pd.to_numeric(df[vol_col], errors='coerce').fillna(0)
+            # 🚨 यहाँ बदलाव किया गया है (Deliverable Qty फिक्स)
+            deliv_cols = [c for c in df.columns if 'DELIV_QTY' in c or 'DELIVERABLE' in c or 'DELIVQTY' in c or 'DELIV_QTY' in c]
+            if deliv_cols:
+                df['DELIV_QTY'] = pd.to_numeric(df[deliv_cols[0]], errors='coerce').fillna(0)
+            else:
+                vol_col = [c for c in df.columns if 'TOTTRDQTY' in c or 'VOLUME' in c][0]
+                df['DELIV_QTY'] = pd.to_numeric(df[vol_col], errors='coerce').fillna(0)
             
             close_col = 'CLOSE_PRICE' if 'CLOSE_PRICE' in df.columns else 'CLOSE'
             prev_col = 'PREV_CLOSE' if 'PREV_CLOSE' in df.columns else 'PREVCLOSE'
