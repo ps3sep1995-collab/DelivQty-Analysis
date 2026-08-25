@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,77 +7,91 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background-color: #0b0f17; }
-        .card-bg { background-color: #121824; }
-        .input-bg { background-color: #1a2232; border-color: #2a3447; }
-        .table-header { background-color: #161d2b; }
+        body { background-color: #0b0f17; color: #94a3b8; }
+        .card-bg { background-color: #121824; border-color: #1e293b; }
+        .input-bg { background-color: #161e2e; border-color: #26334d; color: #ffffff; }
+        .btn-green { background-color: #00e676; color: #000000; font-weight: 700; }
+        .btn-green:hover { background-color: #00c853; }
+        .btn-reset { background-color: #1e293b; color: #cbd5e1; font-weight: 700; }
+        .btn-reset:hover { background-color: #334155; }
+        select option { background-color: #161e2e; color: #ffffff; }
+        .modal-bg { background-color: rgba(0, 0, 0, 0.75); }
     </style>
 </head>
-<body class="text-slate-200 min-h-screen font-sans p-3 md:p-6">
+<body class="p-4 md:p-6 font-sans">
 
-    <!-- Header -->
-    <header class="flex justify-between items-center mb-6 max-w-5xl mx-auto">
-        <h1 class="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
+    <!-- Top Header -->
+    <header class="flex justify-between items-center mb-6 max-w-4xl mx-auto">
+        <h1 class="text-xl md:text-2xl font-bold text-white flex items-center gap-3">
             <i class="fa-solid fa-ghost text-slate-400"></i> F&O Delivery 2x Breakout Terminal
         </h1>
-        <button onclick="resetFilters()" class="text-slate-400 hover:text-white text-xl">
+        <button onclick="window.location.reload()" class="text-slate-400 hover:text-white text-xl">
             <i class="fa-solid fa-arrows-rotate"></i>
         </button>
     </header>
 
-    <main class="max-w-5xl mx-auto space-y-6">
+    <main class="max-w-4xl mx-auto space-y-6">
 
-        <!-- Filters Box -->
-        <div class="card-bg p-4 md:p-6 rounded-xl border border-slate-800 shadow-lg">
+        <!-- Filter Box -->
+        <div class="card-bg p-4 md:p-5 rounded-xl border shadow-xl">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                
                 <!-- Single Date -->
                 <div>
-                    <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-2">SINGLE DATE</label>
-                    <input type="date" id="singleDate" class="w-full input-bg text-white px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:border-emerald-500">
+                    <label class="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">SINGLE DATE</label>
+                    <select id="singleDate" class="w-full input-bg px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:border-emerald-500">
+                        <option value="">All Dates</option>
+                    </select>
                 </div>
 
                 <!-- From Date -->
                 <div>
-                    <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-2">FROM DATE</label>
-                    <input type="date" id="fromDate" class="w-full input-bg text-white px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:border-emerald-500">
+                    <label class="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">FROM DATE</label>
+                    <select id="fromDate" class="w-full input-bg px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:border-emerald-500">
+                        <option value="">Select From Date</option>
+                    </select>
                 </div>
 
                 <!-- To Date -->
                 <div>
-                    <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-2">TO DATE</label>
-                    <input type="date" id="toDate" class="w-full input-bg text-white px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:border-emerald-500">
+                    <label class="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">TO DATE</label>
+                    <select id="toDate" class="w-full input-bg px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:border-emerald-500">
+                        <option value="">Select To Date</option>
+                    </select>
                 </div>
 
                 <!-- Symbol Search -->
                 <div>
-                    <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-2">SYMBOL</label>
-                    <input type="text" id="symbolSearch" placeholder="SEARCH (e.g. RELIAN)" class="w-full input-bg text-white px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:border-emerald-500 uppercase">
+                    <label class="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">SYMBOL</label>
+                    <input type="text" id="symbolSearch" placeholder="SEARCH (e.g. RELIAN)" 
+                           class="w-full input-bg px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:border-emerald-500 uppercase placeholder-slate-500">
                 </div>
+
             </div>
 
             <!-- Action Buttons -->
-            <div class="grid grid-cols-2 gap-4 pt-2">
-                <button onclick="applyFilters()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-3 px-4 rounded-lg text-sm transition shadow-lg shadow-emerald-500/20">
+            <div class="grid grid-cols-2 gap-4 pt-1">
+                <button onclick="applyFilters()" class="btn-green py-3 px-4 rounded-lg text-sm transition">
                     फ़िल्टर लागू करें
                 </button>
-                <button onclick="resetFilters()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-3 px-4 rounded-lg text-sm border border-slate-700 transition">
+                <button onclick="resetFilters()" class="btn-reset py-3 px-4 rounded-lg text-sm transition">
                     रीसेट
                 </button>
             </div>
         </div>
 
-        <!-- Results Counter Bar -->
+        <!-- Scan Results Stats -->
         <div class="flex justify-between items-center text-sm px-1">
-            <span class="text-slate-400">स्कैन रिजल्ट्स</span>
-            <span class="text-slate-300 font-medium">कुल स्टॉक्स: <span id="stockCount" class="text-white font-bold">0</span></span>
+            <span class="text-slate-400 font-medium">स्कैन रिजल्ट्स</span>
+            <span class="text-slate-400 font-medium">कुल स्टॉक्स: <span id="totalCount" class="text-white font-bold">0</span></span>
         </div>
 
         <!-- Data Table -->
-        <div class="card-bg rounded-xl border border-slate-800 overflow-hidden shadow-xl">
+        <div class="card-bg rounded-xl border overflow-hidden shadow-2xl">
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="table-header text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
+                        <tr class="border-b border-slate-800 text-slate-400 text-xs uppercase tracking-wider bg-slate-900/50">
                             <th class="p-4">DATE</th>
                             <th class="p-4">SYMBOL</th>
                             <th class="p-4 text-right">CLOSE</th>
@@ -85,9 +99,9 @@
                             <th class="p-4 text-right">DELIVERY QTY</th>
                         </tr>
                     </thead>
-                    <tbody id="terminalTableBody" class="divide-y divide-slate-800/60 text-sm">
+                    <tbody id="terminalBody" class="divide-y divide-slate-800/50 text-sm">
                         <tr>
-                            <td colspan="5" class="text-center p-8 text-slate-400">डेटा लोड हो रहा है...</td>
+                            <td colspan="5" class="text-center p-8 text-slate-500">Loading Terminal Data...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -96,26 +110,72 @@
 
     </main>
 
+    <!-- 🚨 HISTORICAL DATA POPUP MODAL -->
+    <div id="historyModal" class="fixed inset-0 modal-bg hidden justify-center items-center z-50 p-4">
+        <div class="card-bg rounded-xl border max-w-2xl w-full max-h-[80vh] flex flex-col shadow-2xl overflow-hidden">
+            <!-- Modal Header -->
+            <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900">
+                <div>
+                    <h3 id="modalSymbol" class="text-lg font-bold text-white">SYMBOL</h3>
+                    <p class="text-xs text-slate-400">Historical Delivery Record</p>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white text-2xl font-bold px-2">&times;</button>
+            </div>
+
+            <!-- Modal Content (Table) -->
+            <div class="p-4 overflow-y-auto flex-1">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="text-slate-400 text-xs uppercase border-b border-slate-800">
+                            <th class="pb-3">DATE</th>
+                            <th class="pb-3 text-right">CLOSE</th>
+                            <th class="pb-3 text-right">% CHG</th>
+                            <th class="pb-3 text-right">DELIVERY QTY</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modalBody" class="divide-y divide-slate-800/50 text-sm">
+                        <!-- History injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Logic -->
     <script>
-        let rawData = [];
+        let allScanData = [];
+        let fullHistoryData = {};
 
         async function initTerminal() {
             try {
-                const res = await fetch('data/processed/volume_breakout_scan.csv');
-                const text = await res.text();
-                rawData = parseCSV(text);
-                
-                // डिफॉल्ट: लेटेस्ट तारीख सेट करें
-                if(rawData.length > 0) {
-                    const latestDate = rawData[0].DATE;
-                    document.getElementById('singleDate').value = formatDateForInput(latestDate);
+                // Fetch Scan CSV
+                const response = await fetch('data/processed/volume_breakout_scan.csv');
+                const csvData = await response.text();
+                allScanData = parseCSV(csvData);
+
+                // Fetch History JSON
+                try {
+                    const jsonRes = await fetch('data/processed/full_history_data.json');
+                    fullHistoryData = await jsonRes.json();
+                } catch(e) {
+                    console.log("JSON History pending...");
                 }
+
+                populateDateDropdowns(allScanData);
                 
+                // Select latest date by default
+                if (allScanData.length > 0) {
+                    const uniqueDates = [...new Set(allScanData.map(item => item.DATE))].sort().reverse();
+                    if(uniqueDates.length > 0) {
+                        document.getElementById('singleDate').value = uniqueDates[0];
+                    }
+                }
+
                 applyFilters();
-            } catch (err) {
-                console.error("Error loading CSV:", err);
-                document.getElementById('terminalTableBody').innerHTML = `
-                    <tr><td colspan="5" class="text-center p-6 text-rose-400">डेटा लोड करने में विफल!</td></tr>`;
+            } catch (error) {
+                console.error("CSV Load Error:", error);
+                document.getElementById('terminalBody').innerHTML = `
+                    <tr><td colspan="5" class="text-center p-6 text-rose-500">डेटा लोड नहीं हो पाया! Workflow पूरा होने का इंतज़ार करें।</td></tr>`;
             }
         }
 
@@ -127,17 +187,25 @@
             return lines.slice(1).map(line => {
                 const values = line.split(',').map(v => v.trim());
                 let row = {};
-                headers.forEach((h, idx) => { row[h] = values[idx] || ''; });
+                headers.forEach((h, idx) => {
+                    row[h] = values[idx] || '';
+                });
                 return row;
             });
         }
 
-        function formatDateForInput(dateStr) {
-            // YYYY-MM-DD या DDMMYYYY को YYYY-MM-DD में बदलें
-            if(!dateStr) return '';
-            const parts = dateStr.split('-');
-            if(parts.length === 3) return dateStr;
-            return '';
+        function populateDateDropdowns(data) {
+            const dates = [...new Set(data.map(item => item.DATE))].filter(Boolean).sort().reverse();
+            
+            const singleSelect = document.getElementById('singleDate');
+            const fromSelect = document.getElementById('fromDate');
+            const toSelect = document.getElementById('toDate');
+
+            dates.forEach(date => {
+                singleSelect.appendChild(new Option(date, date));
+                fromSelect.appendChild(new Option(date, date));
+                toSelect.appendChild(new Option(date, date));
+            });
         }
 
         function applyFilters() {
@@ -146,14 +214,14 @@
             const toDate = document.getElementById('toDate').value;
             const symbol = document.getElementById('symbolSearch').value.toUpperCase().trim();
 
-            let filtered = rawData.filter(item => {
+            let filtered = allScanData.filter(row => {
                 let match = true;
-                const itemDate = item.DATE;
+                const rowDate = row.DATE;
 
-                if (singleDate && itemDate !== singleDate) match = false;
-                if (fromDate && itemDate < fromDate) match = false;
-                if (toDate && itemDate > toDate) match = false;
-                if (symbol && !item.SYMBOL.includes(symbol)) match = false;
+                if (singleDate && rowDate !== singleDate) match = false;
+                if (fromDate && rowDate < fromDate) match = false;
+                if (toDate && rowDate > toDate) match = false;
+                if (symbol && !row.SYMBOL.includes(symbol)) match = false;
 
                 return match;
             });
@@ -162,26 +230,25 @@
         }
 
         function renderTable(data) {
-            const tbody = document.getElementById('terminalTableBody');
-            document.getElementById('stockCount').innerText = data.length;
+            const tbody = document.getElementById('terminalBody');
+            document.getElementById('totalCount').innerText = data.length;
 
             if (data.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-slate-500">कोई डेटा नहीं मिला</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = data.map(r => {
-                const pct = parseFloat(r.PCT_CHANGE || 0);
+            tbody.innerHTML = data.map(row => {
+                const pct = parseFloat(row.PCT_CHANGE || 0);
                 const pctClass = pct >= 0 ? 'text-emerald-400' : 'text-rose-500';
                 
-                // Delivery Qty Formatting (e.g., 234,550)
-                const delivQty = Number(r.DELIV_QTY || 0).toLocaleString('en-US');
-                const closePrice = parseFloat(r.CLOSE || 0).toFixed(2);
+                const delivQty = Number(row.DELIV_QTY || row.DELIVERABLE_QTY || 0).toLocaleString('en-US');
+                const closePrice = parseFloat(row.CLOSE || row.CLOSE_PRICE || 0).toFixed(2);
 
                 return `
-                    <tr class="hover:bg-slate-800/40 transition">
-                        <td class="p-4 text-slate-400 text-xs">${r.DATE}</td>
-                        <td class="p-4 font-bold text-white tracking-wide">${r.SYMBOL}</td>
+                    <tr onclick="openHistoryModal('${row.SYMBOL}')" class="hover:bg-slate-800/60 transition cursor-pointer">
+                        <td class="p-4 text-slate-400 text-xs font-mono">${row.DATE}</td>
+                        <td class="p-4 font-bold text-white tracking-wide">${row.SYMBOL}</td>
                         <td class="p-4 text-right font-medium text-slate-200">${closePrice}</td>
                         <td class="p-4 text-right font-bold ${pctClass}">
                             ${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%
@@ -192,12 +259,47 @@
             }).join('');
         }
 
+        // 🚨 OPEN POPUP HISTORY
+        function openHistoryModal(symbol) {
+            const history = fullHistoryData[symbol] || [];
+            document.getElementById('modalSymbol').innerText = symbol;
+            
+            const tbody = document.getElementById('modalBody');
+            if (history.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center p-6 text-slate-500">No History Records Available</td></tr>`;
+            } else {
+                tbody.innerHTML = history.map(item => {
+                    const pct = parseFloat(item.PCT_CHANGE || 0);
+                    const pctClass = pct >= 0 ? 'text-emerald-400' : 'text-rose-500';
+                    const delivQty = Number(item.DELIV_QTY || 0).toLocaleString('en-US');
+                    const closePrice = parseFloat(item.CLOSE || item.CLOSE_PRICE || 0).toFixed(2);
+
+                    return `
+                        <tr class="hover:bg-slate-800/30">
+                            <td class="py-3 text-slate-400 text-xs">${item.DATE}</td>
+                            <td class="py-3 text-right font-medium text-slate-200">${closePrice}</td>
+                            <td class="py-3 text-right font-bold ${pctClass}">${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%</td>
+                            <td class="py-3 text-right font-semibold text-slate-200">${delivQty}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            document.getElementById('historyModal').classList.remove('hidden');
+            document.getElementById('historyModal').classList.add('flex');
+        }
+
+        function closeModal() {
+            document.getElementById('historyModal').classList.add('hidden');
+            document.getElementById('historyModal').classList.remove('flex');
+        }
+
         function resetFilters() {
             document.getElementById('singleDate').value = '';
             document.getElementById('fromDate').value = '';
             document.getElementById('toDate').value = '';
             document.getElementById('symbolSearch').value = '';
-            renderTable(rawData);
+            renderTable(allScanData);
         }
 
         window.onload = initTerminal;
