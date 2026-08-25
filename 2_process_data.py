@@ -2,6 +2,7 @@ import os
 import glob
 import json
 import pandas as pd
+import numpy as np
 
 def run_breakout_processor():
     raw_dir = "data/raw"
@@ -20,30 +21,44 @@ def run_breakout_processor():
     for f in files:
         try:
             df = pd.read_csv(f)
-            df.columns = df.columns.str.strip().str.upper()
+            # कॉलम के नामों में से स्पेस हटाएं और कैपिटल करें
+            df.columns = df.columns.astype(str).str.strip().str.upper()
 
+            # Symbol डिटेक्ट करें
             sym_col = [c for c in df.columns if 'SYMBOL' in c or 'TICKER' in c][0]
             df['SYMBOL'] = df[sym_col].astype(str).str.strip().str.upper()
 
-            # 🚨 यहाँ बदलाव किया गया है (Deliverable Qty फिक्स)
-            deliv_cols = [c for c in df.columns if 'DELIV_QTY' in c or 'DELIVERABLE' in c or 'DELIVQTY' in c or 'DELIV_QTY' in c]
+            # 🚨 FIX 1: Deliverable Qty को प्राथमिकता दें और '-' जैसी स्ट्रिंग को 0 बनाएं
+            deliv_cols = [c for c in df.columns if 'DELIV_QTY' in c or 'DELIVERABLE' in c or 'DELIVQTY' in c]
             if deliv_cols:
-                df['DELIV_QTY'] = pd.to_numeric(df[deliv_cols[0]], errors='coerce').fillna(0)
+                df['DELIV_QTY'] = pd.to_numeric(df[deliv_cols[0]].astype(str).str.strip().str.replace('-', '0'), errors='coerce').fillna(0)
             else:
-                vol_col = [c for c in df.columns if 'TOTTRDQTY' in c or 'VOLUME' in c][0]
+                vol_col = [c for c in df.columns if 'TOTTRDQTY' in c or 'VOLUME' in c or 'TTL_TRD_QNTY' in c][0]
                 df['DELIV_QTY'] = pd.to_numeric(df[vol_col], errors='coerce').fillna(0)
             
-            close_col = 'CLOSE_PRICE' if 'CLOSE_PRICE' in df.columns else 'CLOSE'
+            # Close और Prev Close निकालें
+            close_col = 'CLOSE_PRICE' if 'CLOSE_PRICE' in df.columns else ('LAST_PRICE' if 'LAST_PRICE' in df.columns else 'CLOSE')
             prev_col = 'PREV_CLOSE' if 'PREV_CLOSE' in df.columns else 'PREVCLOSE'
             
             df['CLOSE'] = pd.to_numeric(df.get(close_col, 0), errors='coerce').fillna(0)
             df['PREVCLOSE'] = pd.to_numeric(df.get(prev_col, 0), errors='coerce').fillna(0)
 
+            # 🚨 FIX 2: अगर PCT_CHANGE नहीं है तो खुद कैलकुलेट करें
+            if 'PCT_CHANGE' not in df.columns:
+                df['PCT_CHANGE'] = np.where(
+                    df['PREVCLOSE'] > 0,
+                    ((df['CLOSE'] - df['PREVCLOSE']) / df['PREVCLOSE'] * 100).round(2),
+                    0.0
+                )
+            else:
+                df['PCT_CHANGE'] = pd.to_numeric(df['PCT_CHANGE'], errors='coerce').fillna(0).round(2)
+
             date_str = os.path.basename(f).replace('bhav_', '').replace('.csv', '')
             df['DATE'] = date_str
 
             all_dfs.append(df[['SYMBOL', 'DATE', 'CLOSE', 'PREVCLOSE', 'DELIV_QTY', 'PCT_CHANGE']])
-        except Exception:
+        except Exception as e:
+            print(f"⚠️ फ़ाइल {os.path.basename(f)} में समस्या: {e}")
             continue
 
     if not all_dfs:
