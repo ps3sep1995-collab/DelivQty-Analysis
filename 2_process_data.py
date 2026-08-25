@@ -21,44 +21,50 @@ def run_breakout_processor():
     for f in files:
         try:
             df = pd.read_csv(f)
-            # कॉलम के नामों में से स्पेस हटाएं और कैपिटल करें
+            # कॉलम नेम क्लीन करें (Spaces और uppercase)
             df.columns = df.columns.astype(str).str.strip().str.upper()
 
-            # Symbol डिटेक्ट करें
-            sym_col = [c for c in df.columns if 'SYMBOL' in c or 'TICKER' in c][0]
+            # 1. Symbol Column
+            sym_col = [c for c in df.columns if 'SYMBOL' in c][0]
             df['SYMBOL'] = df[sym_col].astype(str).str.strip().str.upper()
 
-            # 🚨 FIX 1: Deliverable Qty को प्राथमिकता दें और '-' जैसी स्ट्रिंग को 0 बनाएं
-            deliv_cols = [c for c in df.columns if 'DELIV_QTY' in c or 'DELIVERABLE' in c or 'DELIVQTY' in c]
-            if deliv_cols:
-                df['DELIV_QTY'] = pd.to_numeric(df[deliv_cols[0]].astype(str).str.strip().str.replace('-', '0'), errors='coerce').fillna(0)
+            # 2. EQ Series Filter
+            if 'SERIES' in df.columns:
+                df = df[df['SERIES'].astype(str).str.strip().str.upper() == 'EQ'].copy()
+
+            # 3. Deliverable Quantity Column Filter (Exact match with CSV screenshot)
+            if 'DELIV_QTY' in df.columns:
+                df['DELIV_QTY'] = pd.to_numeric(df['DELIV_QTY'].astype(str).str.strip().str.replace('-', '0'), errors='coerce').fillna(0)
             else:
-                vol_col = [c for c in df.columns if 'TOTTRDQTY' in c or 'VOLUME' in c or 'TTL_TRD_QNTY' in c][0]
-                df['DELIV_QTY'] = pd.to_numeric(df[vol_col], errors='coerce').fillna(0)
-            
-            # Close और Prev Close निकालें
-            close_col = 'CLOSE_PRICE' if 'CLOSE_PRICE' in df.columns else ('LAST_PRICE' if 'LAST_PRICE' in df.columns else 'CLOSE')
+                deliv_cols = [c for c in df.columns if 'DELIV' in c or 'DELIVERABLE' in c]
+                if deliv_cols:
+                    df['DELIV_QTY'] = pd.to_numeric(df[deliv_cols[0]].astype(str).str.strip().str.replace('-', '0'), errors='coerce').fillna(0)
+                else:
+                    df['DELIV_QTY'] = pd.to_numeric(df['TTL_TRD_QNTY'], errors='coerce').fillna(0)
+
+            # 4. Close Price & Prev Close
+            close_col = 'CLOSE_PRICE' if 'CLOSE_PRICE' in df.columns else 'CLOSE'
             prev_col = 'PREV_CLOSE' if 'PREV_CLOSE' in df.columns else 'PREVCLOSE'
-            
+
             df['CLOSE'] = pd.to_numeric(df.get(close_col, 0), errors='coerce').fillna(0)
             df['PREVCLOSE'] = pd.to_numeric(df.get(prev_col, 0), errors='coerce').fillna(0)
 
-            # 🚨 FIX 2: अगर PCT_CHANGE नहीं है तो खुद कैलकुलेट करें
-            if 'PCT_CHANGE' not in df.columns:
+            # 5. PCT Change
+            if 'PCT_CHANGE' in df.columns:
+                df['PCT_CHANGE'] = pd.to_numeric(df['PCT_CHANGE'], errors='coerce').fillna(0).round(2)
+            else:
                 df['PCT_CHANGE'] = np.where(
                     df['PREVCLOSE'] > 0,
                     ((df['CLOSE'] - df['PREVCLOSE']) / df['PREVCLOSE'] * 100).round(2),
                     0.0
                 )
-            else:
-                df['PCT_CHANGE'] = pd.to_numeric(df['PCT_CHANGE'], errors='coerce').fillna(0).round(2)
 
             date_str = os.path.basename(f).replace('bhav_', '').replace('.csv', '')
             df['DATE'] = date_str
 
             all_dfs.append(df[['SYMBOL', 'DATE', 'CLOSE', 'PREVCLOSE', 'DELIV_QTY', 'PCT_CHANGE']])
         except Exception as e:
-            print(f"⚠️ फ़ाइल {os.path.basename(f)} में समस्या: {e}")
+            print(f"⚠️ Error in {os.path.basename(f)}: {e}")
             continue
 
     if not all_dfs:
@@ -68,7 +74,7 @@ def run_breakout_processor():
     bhav_df = pd.concat(all_dfs, ignore_index=True)
     bhav_df = bhav_df.sort_values(['SYMBOL', 'DATE']).reset_index(drop=True)
 
-    # 1. Popup के लिए पूरे इतिहास का JSON बनाएं
+    # 1. Popup JSON
     history_dict = {}
     for symbol, group in bhav_df.groupby('SYMBOL'):
         history_dict[symbol] = group.sort_values('DATE', ascending=False).to_dict(orient='records')
@@ -77,7 +83,7 @@ def run_breakout_processor():
     with open(output_json, 'w', encoding='utf-8') as f:
         json.dump(history_dict, f)
 
-    # 2. Moving Averages (2D, 5D, 7D, 10D)
+    # 2. Moving Averages Calculation
     bhav_df['AVG_2D'] = bhav_df.groupby('SYMBOL')['DELIV_QTY'].transform(lambda x: x.shift(1).rolling(2).mean())
     bhav_df['AVG_5D'] = bhav_df.groupby('SYMBOL')['DELIV_QTY'].transform(lambda x: x.shift(1).rolling(5).mean())
     bhav_df['AVG_7D'] = bhav_df.groupby('SYMBOL')['DELIV_QTY'].transform(lambda x: x.shift(1).rolling(7).mean())
@@ -96,7 +102,7 @@ def run_breakout_processor():
 
     scan_df = bhav_df[bhav_df['BREAKOUT_TYPE'] != "NO"].copy()
     scan_df.to_csv(output_csv, index=False)
-    print(f"🎉 Breakout CSV और Full History JSON सफलता से बन गए हैं!")
+    print(f"🎉 Deliverable Qty Data Processed Perfectly!")
 
 if __name__ == "__main__":
     run_breakout_processor()
