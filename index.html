@@ -3,122 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NSE F&O Deliverable Volume Breakout Scanner</title>
-    <!-- Tailwind CSS CDN -->
+    <title>F&O Delivery 2x Breakout Terminal</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .modal-bg { background-color: rgba(0, 0, 0, 0.6); }
+        body { background-color: #0b0f17; }
+        .card-bg { background-color: #121824; }
+        .input-bg { background-color: #1a2232; border-color: #2a3447; }
+        .table-header { background-color: #161d2b; }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
+<body class="text-slate-200 min-h-screen font-sans p-3 md:p-6">
 
     <!-- Header -->
-    <header class="bg-slate-800 border-b border-slate-700 p-4 sticky top-0 z-10 shadow-lg">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-            <h1 class="text-2xl font-bold text-emerald-400 flex items-center gap-2">
-                <i class="fa-solid me-2 fa-chart-line"></i> NSE F&O Delivery Breakout Scanner
-            </h1>
-            <div class="flex items-center gap-3 w-full md:w-auto">
-                <input type="text" id="searchInput" placeholder="Search Symbol..." 
-                       class="bg-slate-700 text-white px-4 py-2 rounded-lg border border-slate-600 focus:outline-none focus:border-emerald-500 w-full md:w-64">
-                <span id="totalCount" class="bg-emerald-500/10 text-emerald-400 px-3 py-2 rounded-lg border border-emerald-500/20 text-sm font-semibold whitespace-nowrap">
-                    Loading...
-                </span>
-            </div>
-        </div>
+    <header class="flex justify-between items-center mb-6 max-w-5xl mx-auto">
+        <h1 class="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-ghost text-slate-400"></i> F&O Delivery 2x Breakout Terminal
+        </h1>
+        <button onclick="resetFilters()" class="text-slate-400 hover:text-white text-xl">
+            <i class="fa-solid fa-arrows-rotate"></i>
+        </button>
     </header>
 
-    <!-- Main Table Container -->
-    <main class="max-w-7xl mx-auto p-4 md:p-6">
-        <div class="bg-slate-800 rounded-xl border border-slate-700 shadow-xl overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-slate-700/50 text-slate-300 text-xs uppercase tracking-wider border-b border-slate-700">
-                        <th class="p-4">Symbol</th>
-                        <th class="p-4">Date</th>
-                        <th class="p-4 text-right">Close Price</th>
-                        <th class="p-4 text-right">% Change</th>
-                        <th class="p-4 text-right">Deliverable Qty</th>
-                        <th class="p-4 text-center">Breakout Type</th>
-                        <th class="p-4 text-center">Action</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody" class="divide-y divide-slate-700/50 text-sm">
-                    <tr>
-                        <td colspan="7" class="text-center p-8 text-slate-400">
-                            <i class="fa-solid fa-spinner fa-spin text-2xl text-emerald-400 mb-2"></i><br>
-                            Loading Breakout Data...
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </main>
+    <main class="max-w-5xl mx-auto space-y-6">
 
-    <!-- History Popup Modal -->
-    <div id="historyModal" class="fixed inset-0 modal-bg hidden justify-center items-center z-50 p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl">
-            <!-- Modal Header -->
-            <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/80 rounded-t-xl">
+        <!-- Filters Box -->
+        <div class="card-bg p-4 md:p-6 rounded-xl border border-slate-800 shadow-lg">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <!-- Single Date -->
                 <div>
-                    <h3 id="modalSymbol" class="text-xl font-bold text-emerald-400">SYMBOL</h3>
-                    <p class="text-xs text-slate-400">NSE Historical Delivery Data</p>
+                    <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-2">SINGLE DATE</label>
+                    <input type="date" id="singleDate" class="w-full input-bg text-white px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:border-emerald-500">
                 </div>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-white p-2 text-xl font-bold">
-                    &times;
+
+                <!-- From Date -->
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-2">FROM DATE</label>
+                    <input type="date" id="fromDate" class="w-full input-bg text-white px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <!-- To Date -->
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-2">TO DATE</label>
+                    <input type="date" id="toDate" class="w-full input-bg text-white px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <!-- Symbol Search -->
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-2">SYMBOL</label>
+                    <input type="text" id="symbolSearch" placeholder="SEARCH (e.g. RELIAN)" class="w-full input-bg text-white px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:border-emerald-500 uppercase">
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="grid grid-cols-2 gap-4 pt-2">
+                <button onclick="applyFilters()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-3 px-4 rounded-lg text-sm transition shadow-lg shadow-emerald-500/20">
+                    फ़िल्टर लागू करें
+                </button>
+                <button onclick="resetFilters()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-3 px-4 rounded-lg text-sm border border-slate-700 transition">
+                    रीसेट
                 </button>
             </div>
-            <!-- Modal Body (History Table) -->
-            <div class="p-4 overflow-y-auto flex-1">
+        </div>
+
+        <!-- Results Counter Bar -->
+        <div class="flex justify-between items-center text-sm px-1">
+            <span class="text-slate-400">स्कैन रिजल्ट्स</span>
+            <span class="text-slate-300 font-medium">कुल स्टॉक्स: <span id="stockCount" class="text-white font-bold">0</span></span>
+        </div>
+
+        <!-- Data Table -->
+        <div class="card-bg rounded-xl border border-slate-800 overflow-hidden shadow-xl">
+            <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="text-slate-400 text-xs border-b border-slate-700 uppercase">
-                            <th class="pb-2">Date</th>
-                            <th class="pb-2 text-right">Close</th>
-                            <th class="pb-2 text-right">% Chg</th>
-                            <th class="pb-2 text-right">Deliverable Qty</th>
+                        <tr class="table-header text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
+                            <th class="p-4">DATE</th>
+                            <th class="p-4">SYMBOL</th>
+                            <th class="p-4 text-right">CLOSE</th>
+                            <th class="p-4 text-right">% CHG</th>
+                            <th class="p-4 text-right">DELIVERY QTY</th>
                         </tr>
                     </thead>
-                    <tbody id="modalTableBody" class="divide-y divide-slate-700/30 text-sm">
-                        <!-- History Rows injected here -->
+                    <tbody id="terminalTableBody" class="divide-y divide-slate-800/60 text-sm">
+                        <tr>
+                            <td colspan="5" class="text-center p-8 text-slate-400">डेटा लोड हो रहा है...</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
         </div>
-    </div>
 
-    <!-- JavaScript Execution -->
+    </main>
+
     <script>
-        let breakoutData = [];
-        let fullHistoryData = {};
+        let rawData = [];
 
-        // Fetch Both CSV and History JSON
-        async function loadDashboardData() {
+        async function initTerminal() {
             try {
-                // Fetch Breakout CSV
-                const csvRes = await fetch('data/processed/volume_breakout_scan.csv');
-                const csvText = await csvRes.text();
-                breakoutData = parseCSV(csvText);
-
-                // Fetch History JSON
-                const jsonRes = await fetch('data/processed/full_history_data.json');
-                fullHistoryData = await jsonRes.json();
-
-                renderTable(breakoutData);
-            } catch (error) {
-                console.error("Error loading data:", error);
-                document.getElementById('tableBody').innerHTML = `
-                    <tr>
-                        <td colspan="7" class="text-center p-8 text-rose-400">
-                            ❌ डेटा लोड करने में असमर्थ। कृपया Actions Workflow पूरा होने का इंतज़ार करें।
-                        </td>
-                    </tr>`;
+                const res = await fetch('data/processed/volume_breakout_scan.csv');
+                const text = await res.text();
+                rawData = parseCSV(text);
+                
+                // डिफॉल्ट: लेटेस्ट तारीख सेट करें
+                if(rawData.length > 0) {
+                    const latestDate = rawData[0].DATE;
+                    document.getElementById('singleDate').value = formatDateForInput(latestDate);
+                }
+                
+                applyFilters();
+            } catch (err) {
+                console.error("Error loading CSV:", err);
+                document.getElementById('terminalTableBody').innerHTML = `
+                    <tr><td colspan="5" class="text-center p-6 text-rose-400">डेटा लोड करने में विफल!</td></tr>`;
             }
         }
 
-        // CSV Parser Helper
         function parseCSV(text) {
             const lines = text.trim().split('\n');
             if (lines.length < 2) return [];
@@ -127,96 +127,80 @@
             return lines.slice(1).map(line => {
                 const values = line.split(',').map(v => v.trim());
                 let row = {};
-                headers.forEach((h, idx) => {
-                    row[h] = values[idx];
-                });
+                headers.forEach((h, idx) => { row[h] = values[idx] || ''; });
                 return row;
             });
         }
 
-        // Render Breakout Main Table
+        function formatDateForInput(dateStr) {
+            // YYYY-MM-DD या DDMMYYYY को YYYY-MM-DD में बदलें
+            if(!dateStr) return '';
+            const parts = dateStr.split('-');
+            if(parts.length === 3) return dateStr;
+            return '';
+        }
+
+        function applyFilters() {
+            const singleDate = document.getElementById('singleDate').value;
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const symbol = document.getElementById('symbolSearch').value.toUpperCase().trim();
+
+            let filtered = rawData.filter(item => {
+                let match = true;
+                const itemDate = item.DATE;
+
+                if (singleDate && itemDate !== singleDate) match = false;
+                if (fromDate && itemDate < fromDate) match = false;
+                if (toDate && itemDate > toDate) match = false;
+                if (symbol && !item.SYMBOL.includes(symbol)) match = false;
+
+                return match;
+            });
+
+            renderTable(filtered);
+        }
+
         function renderTable(data) {
-            const tbody = document.getElementById('tableBody');
-            document.getElementById('totalCount').innerText = `${data.length} Stocks Found`;
+            const tbody = document.getElementById('terminalTableBody');
+            document.getElementById('stockCount').innerText = data.length;
 
             if (data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center p-8 text-slate-400">कोई ब्रेकआउट नहीं मिला</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-slate-500">कोई डेटा नहीं मिला</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = data.map(row => {
-                const pct = parseFloat(row.PCT_CHANGE || 0);
-                const pctClass = pct >= 0 ? 'text-emerald-400' : 'text-rose-400';
-                const delivQty = Number(row.DELIV_QTY || 0).toLocaleString('en-IN');
+            tbody.innerHTML = data.map(r => {
+                const pct = parseFloat(r.PCT_CHANGE || 0);
+                const pctClass = pct >= 0 ? 'text-emerald-400' : 'text-rose-500';
+                
+                // Delivery Qty Formatting (e.g., 234,550)
+                const delivQty = Number(r.DELIV_QTY || 0).toLocaleString('en-US');
+                const closePrice = parseFloat(r.CLOSE || 0).toFixed(2);
 
                 return `
-                    <tr class="hover:bg-slate-700/30 transition">
-                        <td class="p-4 font-bold text-white">${row.SYMBOL}</td>
-                        <td class="p-4 text-slate-300">${row.DATE}</td>
-                        <td class="p-4 text-right font-semibold">₹${parseFloat(row.CLOSE || 0).toFixed(2)}</td>
-                        <td class="p-4 text-right font-semibold ${pctClass}">${pct > 0 ? '+' : ''}${pct}%</td>
-                        <!-- 🚨 EXACT DELIVERABLE QTY FIELD DISPLAYED HERE -->
-                        <td class="p-4 text-right font-bold text-emerald-300">${delivQty}</td>
-                        <td class="p-4 text-center">
-                            <span class="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2.5 py-1 rounded-full text-xs font-bold">
-                                ${row.BREAKOUT_TYPE} Breakout
-                            </span>
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="p-4 text-slate-400 text-xs">${r.DATE}</td>
+                        <td class="p-4 font-bold text-white tracking-wide">${r.SYMBOL}</td>
+                        <td class="p-4 text-right font-medium text-slate-200">${closePrice}</td>
+                        <td class="p-4 text-right font-bold ${pctClass}">
+                            ${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%
                         </td>
-                        <td class="p-4 text-center">
-                            <button onclick="openHistoryModal('${row.SYMBOL}')" 
-                                    class="bg-slate-700 hover:bg-emerald-600 text-slate-200 hover:text-white px-3 py-1.5 rounded-md text-xs transition">
-                                <i class="fa-solid fa-clock-rotate-left mr-1"></i> History
-                            </button>
-                        </td>
+                        <td class="p-4 text-right font-semibold text-slate-200">${delivQty}</td>
                     </tr>
                 `;
             }).join('');
         }
 
-        // Open Modal Function
-        function openHistoryModal(symbol) {
-            const history = fullHistoryData[symbol] || [];
-            document.getElementById('modalSymbol').innerText = `${symbol} History`;
-            
-            const modalBody = document.getElementById('modalTableBody');
-            if (history.length === 0) {
-                modalBody.innerHTML = `<tr><td colspan="4" class="text-center p-4 text-slate-400">No History Available</td></tr>`;
-            } else {
-                modalBody.innerHTML = history.map(item => {
-                    const pct = parseFloat(item.PCT_CHANGE || 0);
-                    const pctClass = pct >= 0 ? 'text-emerald-400' : 'text-rose-400';
-                    const delivQty = Number(item.DELIV_QTY || 0).toLocaleString('en-IN');
-
-                    return `
-                        <tr class="hover:bg-slate-700/40">
-                            <td class="py-2.5 text-slate-300">${item.DATE}</td>
-                            <td class="py-2.5 text-right font-medium">₹${parseFloat(item.CLOSE || 0).toFixed(2)}</td>
-                            <td class="py-2.5 text-right font-medium ${pctClass}">${pct > 0 ? '+' : ''}${pct}%</td>
-                            <td class="py-2.5 text-right font-bold text-slate-200">${delivQty}</td>
-                        </tr>
-                    `;
-                }).join('');
-            }
-
-            document.getElementById('historyModal').classList.remove('hidden');
-            document.getElementById('historyModal').classList.add('flex');
+        function resetFilters() {
+            document.getElementById('singleDate').value = '';
+            document.getElementById('fromDate').value = '';
+            document.getElementById('toDate').value = '';
+            document.getElementById('symbolSearch').value = '';
+            renderTable(rawData);
         }
 
-        // Close Modal Function
-        function closeModal() {
-            document.getElementById('historyModal').classList.add('hidden');
-            document.getElementById('historyModal').classList.remove('flex');
-        }
-
-        // Live Search Filter
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            const val = e.target.value.toUpperCase().trim();
-            const filtered = breakoutData.filter(r => r.SYMBOL.includes(val));
-            renderTable(filtered);
-        });
-
-        // Initialize App
-        window.onload = loadDashboardData;
+        window.onload = initTerminal;
     </script>
 </body>
 </html>
