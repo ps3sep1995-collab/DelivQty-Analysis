@@ -2,7 +2,7 @@ name: Daily Bhavcopy Scanner
 
 on:
   schedule:
-    - cron: '30 13 * * 1-5' # सोमवार से शुक्रवार
+    - cron: '30 13 * * 0-6' # सोमवार से शुक्रवार
   workflow_dispatch: # मैनुअल रन करने के लिए
 
 jobs:
