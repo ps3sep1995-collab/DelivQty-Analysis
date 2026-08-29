@@ -1,0 +1,37 @@
+name: Daily F&O 3-Expiry Data Pipeline
+
+on:
+  schedule:
+    # UTC समय शाम 11:30 (IST शाम 5:00 बजे) ऑटोमैटिक चलेगा
+    - cron: '30 11 * * *'
+  workflow_dispatch: # GitHub से मैनुअल बटन दबाकर चलाने का विकल्प
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python Environment
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Step 1 - Fetch F&O Data from NSE
+        run: python fetch_fo_data.py
+
+      - name: Step 2 - Process 3-Expiry Futures & Combine CE/PE Data
+        run: python generate_daily_3expiry_with_options.py
+
+      - name: Step 3 - Commit and Push Daily CSV Files
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add fo_data/ daily_3expiry_data/
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto: Daily 3-Expiry & Options OI Data Updated [$(date +'%Y-%m-%d')]" && git push)
