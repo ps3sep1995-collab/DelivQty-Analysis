@@ -6,8 +6,7 @@ import io
 import time
 import zoneinfo
 
-def fetch_fo_data(days_to_fetch=50):
-    # NSE से डेटा डाउनलोड करने के लिए HTTP Headers
+def fetch_fo_data(days_to_fetch=140):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': '*/*'
@@ -16,11 +15,12 @@ def fetch_fo_data(days_to_fetch=50):
     output_folder = "fo_data"
     os.makedirs(output_folder, exist_ok=True)
     
-    # IST Timezone
     ist_tz = zoneinfo.ZoneInfo("Asia/Kolkata")
     now_ist = datetime.datetime.now(ist_tz)
 
-    print(f"🚀 F&O Data Fetching (Last {days_to_fetch} Days)...")
+    print(f"🚀 F&O Data Fetching Started (Fetching 100+ Active Trading Days)...")
+
+    saved_count = 0
 
     for days_back in range(0, days_to_fetch):
         target_date = now_ist - datetime.timedelta(days=days_back)
@@ -28,9 +28,10 @@ def fetch_fo_data(days_to_fetch=50):
         file_date_str = target_date.strftime("%Y-%m-%d") # Format: YYYY-MM-DD
         output_path = os.path.join(output_folder, f"{file_date_str}_FO.csv")
 
-        # अगर फ़ाइल पहले से डाउनलोड है तो दोबारा ना करें
+        # अगर फ़ाइल पहले से डाउनलोड है
         if os.path.exists(output_path):
             print(f"⏩ File Already Exists: {file_date_str}")
+            saved_count += 1
             continue
 
         date_str = target_date.strftime("%Y%m%d")             
@@ -55,9 +56,7 @@ def fetch_fo_data(days_to_fetch=50):
                     df.columns = df.columns.str.strip()
 
                     if len(df) > 100:
-                        # --------------------------------------------------
-                        # 🔥 DATE VALIDATION LOGIC (NSE Redirect Check)
-                        # --------------------------------------------------
+                        # Date Validation Logic
                         date_col = None
                         for col in ['TradDt', 'TIMESTAMP', 'TRAD_DT']:
                             if col in df.columns:
@@ -65,27 +64,27 @@ def fetch_fo_data(days_to_fetch=50):
                                 break
 
                         if date_col:
-                            # CSV की पहली रो से वास्तविक ट्रेडिंग डेट निकालना
                             file_actual_date = pd.to_datetime(df[date_col].iloc[0]).strftime("%Y-%m-%d")
                             
-                            # यदि फ़ाइल की असली तारीख हमारी target_date से मैच नहीं करती (छुट्टी का दिन)
+                            # छुट्टी के दिन NSE द्वारा पिछला डेटा रिडायरेक्ट करने पर स्किप करें
                             if file_actual_date != file_date_str:
-                                print(f"⚠️ Holiday/Closed Market for {file_date_str}! NSE served last trading day data ({file_actual_date}). Skipping.")
+                                print(f"⚠️ Holiday/Closed Market for {file_date_str}! Skipping.")
                                 break
 
-                        # यदि असली तारीख मैच हो गई
                         df.to_csv(output_path, index=False)
-                        print(f"✅ Real F&O Data Saved for Date: {file_date_str}")
+                        saved_count += 1
+                        print(f"✅ [{saved_count}] Real F&O Data Saved: {file_date_str}")
                         downloaded = True
                         break
 
-            except Exception as e:
+            except Exception:
                 pass
 
         if not downloaded:
-            print(f"⏩ Market Closed / No Real Data for: {file_date_str}")
+            print(f"⏩ Market Closed / No Data for: {file_date_str}")
 
-        time.sleep(0.8)
+        time.sleep(0.4)
 
 if __name__ == "__main__":
-    fetch_fo_data(10)
+    # 140 कैलेंडर दिनों की चेकिंग से पूरे 100 ट्रेडिंग दिन डाउनलोड हो जाएँगे
+    fetch_fo_data(140)
