@@ -6,7 +6,7 @@ import io
 import time
 import zoneinfo
 
-def fetch_fo_data(days_to_fetch=10):
+def fetch_fo_data(days_to_fetch=50):
     # NSE से डेटा डाउनलोड करने के लिए HTTP Headers
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
