@@ -4,7 +4,7 @@ on:
   schedule:
     # UTC समय शाम 11:30 (IST शाम 5:00 बजे) ऑटोमैटिक चलेगा
     - cron: '30 11 * * *'
-  workflow_dispatch: # GitHub से मैनुअल बटन दबाकर चलाने का विकल्प
+  workflow_dispatch: # GitHub से मैनुअल चलाने के लिए
 
 jobs:
   run-pipeline:
@@ -21,7 +21,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install requests pandas tzdata
 
       - name: Step 1 - Fetch F&O Data from NSE
         run: python fetch_fo_data.py
