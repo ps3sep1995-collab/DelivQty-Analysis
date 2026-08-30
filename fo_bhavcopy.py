@@ -3,7 +3,7 @@ import requests
 import io
 import zipfile
 import datetime
-import zoneinfo
+import pytz
 
 def download_raw_fo_bhavcopy(target_trade_days=100):
     headers = {
