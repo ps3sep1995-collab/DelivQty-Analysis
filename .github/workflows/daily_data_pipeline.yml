@@ -1,0 +1,37 @@
+name: Daily Equity & FO Data Pipeline
+
+on:
+  schedule:
+    - cron: '0 13 * * 1-5' # शाम 6:30 बजे IST (सोमवार से शुक्रवार)
+  workflow_dispatch:
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pandas zoneinfo
+
+      - name: Step 1 - Download 100 Days Raw Equity Data
+        run: python equity_bhavcopy.py
+
+      - name: Step 2 - Download 100 Days Raw F&O Data
+        run: python fo_bhavcopy.py
+
+      - name: Step 3 - Commit and Push Only Downloaded Folders
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add raw_equity_data/ raw_fo_data/
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Automated Download Update [$(date +'%Y-%m-%d')]" && git push)
