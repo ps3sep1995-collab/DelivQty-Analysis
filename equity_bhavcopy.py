@@ -1,7 +1,7 @@
 import os
 import requests
 import datetime
-import zoneinfo
+import pytz
 
 def download_raw_equity_bhavcopy(target_trade_days=100):
     headers = {
@@ -9,8 +9,9 @@ def download_raw_equity_bhavcopy(target_trade_days=100):
     }
 
     os.makedirs("raw_equity_data", exist_ok=True)
-    ist_tz = zoneinfo.ZoneInfo("Asia/Kolkata")
-    now_ist = datetime.datetime.now(ist_tz)
+    # जहां Timezone डिफाइन किया है:
+ist_tz = pytz.timezone("Asia/Kolkata")
+now_ist = datetime.datetime.now(ist_tz)
 
     print(f"🚀 Equity Raw Data Download Started: Target = {target_trade_days} Active Trading Days")
 
