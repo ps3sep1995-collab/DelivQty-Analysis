@@ -9,9 +9,8 @@ def download_raw_equity_bhavcopy(target_trade_days=100):
     }
 
     os.makedirs("raw_equity_data", exist_ok=True)
-    # जहां Timezone डिफाइन किया है:
-ist_tz = pytz.timezone("Asia/Kolkata")
-now_ist = datetime.datetime.now(ist_tz)
+    ist_tz = pytz.timezone("Asia/Kolkata")
+    now_ist = datetime.datetime.now(ist_tz)
 
     print(f"🚀 Equity Raw Data Download Started: Target = {target_trade_days} Active Trading Days")
 
@@ -42,7 +41,6 @@ now_ist = datetime.datetime.now(ist_tz)
                     first_row = lines[1].split(',')
                     actual_date_in_file = first_row[2].strip() if len(first_row) > 2 else ""
 
-                    # Holiday check: skipped if NSE redirects to an older date on holidays
                     expected_date_fmt = target_date.strftime("%d-%b-%Y")
                     
                     if actual_date_in_file and actual_date_in_file.upper() != expected_date_fmt.upper():
