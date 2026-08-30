@@ -11,7 +11,8 @@ def download_raw_fo_bhavcopy(target_trade_days=100):
     }
 
     os.makedirs("raw_fo_data", exist_ok=True)
-    ist_tz = zoneinfo.ZoneInfo("Asia/Kolkata")
+    # जहां Timezone डिफाइन किया है:
+    ist_tz = pytz.timezone("Asia/Kolkata")
     now_ist = datetime.datetime.now(ist_tz)
 
     print(f"🚀 F&O Raw Data Download Started: Target = {target_trade_days} Active Trading Days")
