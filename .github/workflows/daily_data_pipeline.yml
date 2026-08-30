@@ -2,7 +2,7 @@ name: Daily Equity & FO Data Pipeline
 
 on:
   schedule:
-    - cron: '0 13 * * 1-5' # शाम 6:30 बजे IST (सोमवार से शुक्रवार)
+    - cron: '0 13 * * 0-6' # शाम 6:30 बजे IST (सोमवार से शुक्रवार)
   workflow_dispatch:
 
 jobs:
