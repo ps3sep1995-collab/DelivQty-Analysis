@@ -11,7 +11,6 @@ def download_raw_fo_bhavcopy(target_trade_days=100):
     }
 
     os.makedirs("raw_fo_data", exist_ok=True)
-    # जहां Timezone डिफाइन किया है:
     ist_tz = pytz.timezone("Asia/Kolkata")
     now_ist = datetime.datetime.now(ist_tz)
 
