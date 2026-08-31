@@ -5,7 +5,7 @@ import zipfile
 import datetime
 import pytz
 
-def download_raw_fo_bhavcopy(target_trade_days=100):
+def download_raw_fo_bhavcopy(target_trade_days=160):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': '*/*'
@@ -38,11 +38,10 @@ def download_raw_fo_bhavcopy(target_trade_days=100):
         month_str = target_date.strftime("%b").upper()
 
         # NSE Derivative URLs (New UDiFF Format & Historical Old Format)
-        urls = [
-            # 1. New NSE UDiFF Format
-            f"https://archives.nseindia.com/content/fo/BhavCopy_NSE_FO_0_0_0_{date_ddmmyyyy}_F_0000.csv.zip",
-            # 2. Historical Format
-            f"https://archives.nseindia.com/content/historical/DERIVATIVES/{year_str}/{month_str}/fo{date_ddmmmyyyy}bhav.csv.zip"
+                urls = [
+                            f"https://archives.nseindia.com/content/fo/BhavCopy_NSE_FO_0_0_0_{date_str}_F_0000.csv.zip",
+            f"https://nsearchives.nseindia.com/content/fo/BhavCopy_NSE_FO_0_0_0_{date_str}_F_0000.csv.zip",
+            f"https://archives.nseindia.com/content/historical/DERIVATIVES/{year_str}/{month_str_upper}/fo{date_str_upper}bhav.csv.zip"
         ]
 
         downloaded = False
@@ -69,4 +68,4 @@ def download_raw_fo_bhavcopy(target_trade_days=100):
         days_back += 1
 
 if __name__ == "__main__":
-    download_raw_fo_bhavcopy(100)
+    download_raw_fo_bhavcopy(160)
