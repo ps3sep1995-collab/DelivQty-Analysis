@@ -5,54 +5,53 @@ import os
 def generate_fo_stocks_txt():
     raw_folder = "raw_fo_data"
     
-    # फोल्डर की किसी भी एक डाउनलोड की हुई F&O CSV फाइल को खोजें
+    # raw_fo_data फोल्डर की CSV फाइलों की लिस्ट लें
     csv_files = glob.glob(os.path.join(raw_folder, "*_Full_FO.csv"))
     
     if not csv_files:
-        print("❌ कोई F&O CSV फाइल नहीं मिली! कृपया पहले डेटा डाउनलोड करें।")
+        print("❌ कोई F&O CSV फाइल नहीं मिली!")
         return
 
-    # नवीनतम CSV फाइल चुनें
-    latest_file = csv_files[0]
+    # सबसे नई CSV फाइल चुनें
+    latest_file = sorted(csv_files)[-1]
     print(f"📄 फाइल से स्टॉक्स की लिस्ट निकाली जा रही है: {os.path.basename(latest_file)}")
 
     try:
         df = pd.read_csv(latest_file)
         df.columns = df.columns.str.strip() # स्पेस हटाएं
 
-        # 1. सिंबल और इंस्ट्रूमेंट टाइप वाले कॉलम की पहचान करें
+        # 1. सिंबल कॉलम पहचानें
         symbol_col = None
-        instrument_col = None
-
-        for col in ['TckrSymb', 'SYMBOL']:
+        for col in ['TckrSymb', 'SYMBOL', 'Symbol', 'TCKR_SYMB']:
             if col in df.columns:
                 symbol_col = col
                 break
 
-        for col in ['Sgmt', 'INSTRUMENT']:
-            if col in df.columns:
-                instrument_col = col
-                break
-
         if not symbol_col:
-            print("❌ सिंबल कॉलम नहीं मिला!")
+            print(f"❌ सिंबल कॉलम नहीं मिला! CSV कॉलम: {list(df.columns)}")
             return
 
-        # 2. F&O स्टॉक्स को फिल्टर करें
-        # नए UDiFF फॉर्मेट में Stock Futures/Options (STKF/STKO) होते हैं, पुराने में FUTSTK/OPTSTK
-        if instrument_col:
-            stock_df = df[df[instrument_col].isin(['STKF', 'STKO', 'FUTSTK', 'OPTSTK'])]
-            stocks = stock_df[symbol_col].dropna().unique()
-        else:
-            # अगर Instrument कॉलम न मिले तो सूचकांकों (Indices) को हटाकर बाकी स्टॉक्स लें
-            indices = ['NIFTY', 'BANKNIFTY', 'FINNIFTY', 'MIDCPNIFTY']
-            all_symbols = df[symbol_col].dropna().unique()
-            stocks = [s for s in all_symbols if s not in indices]
+        # 2. सूचकांकों (Indices) की लिस्ट जिन्हें हटाना है
+        indices = [
+            'NIFTY', 'BANKNIFTY', 'FINNIFTY', 'MIDCPNIFTY', 
+            'NIFTYNXT50', 'NIFTY IT', 'NIFTY50', 'BANKNIFTY'
+        ]
 
-        # 3. अल्फाबेटिकल क्रम में सॉर्ट करें
-        stocks = sorted(stocks)
+        # 3. सभी यूनिक सिम्बल्स निकालें
+        all_symbols = df[symbol_col].dropna().unique()
 
-        # 4. .txt फाइल में सेव करें (हर स्टॉक नई लाइन पर)
+        # 4. फिल्टर: सिर्फ स्टॉक्स (अक्षरों से शुरू होने वाले और Index को छोड़कर)
+        stocks = []
+        for sym in all_symbols:
+            sym_str = str(sym).strip()
+            # सूचकांकों को छोड़ें और केवल वैलिड स्टॉक सिंबल लें
+            if sym_str.upper() not in indices and len(sym_str) > 0:
+                stocks.append(sym_str)
+
+        # 5. अल्फाबेटिकल क्रम में सॉर्ट करें
+        stocks = sorted(list(set(stocks)))
+
+        # 6. .txt फाइल में सेव करें
         txt_output_path = "fo_stocks_list.txt"
         with open(txt_output_path, "w", encoding="utf-8") as f:
             for stock in stocks:
