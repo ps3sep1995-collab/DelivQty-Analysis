@@ -24,7 +24,7 @@ jobs:
         pip install pandas requests pytz
 
     - name: Run Python Script
-      run: python generate_stocks.py # अपने पायथन फाइल का सही नाम यहाँ लिखें
+      run: python generate_fo_stocks_list.py # अपने पायथन फाइल का सही नाम यहाँ लिखें
 
     - name: Commit and Push txt file
       run: |
