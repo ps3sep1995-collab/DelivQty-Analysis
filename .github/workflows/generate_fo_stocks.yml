@@ -1,0 +1,35 @@
+name: Generate F&O Stocks List
+
+on:
+  workflow_dispatch: # इससे आप GitHub बटन दबाकर मैनुअली भी रन कर सकते हैं
+  schedule:
+    - cron: '0 13 * * 1-5' # सोमवार से शुक्रवार हर दिन शाम को ऑटोमैटिक चलेगा (UTC time)
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-python-version: '3.10'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pandas requests pytz
+
+    - name: Run Python Script
+      run: python generate_stocks.py # अपने पायथन फाइल का सही नाम यहाँ लिखें
+
+    - name: Commit and Push txt file
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add fo_stocks_list.txt
+        git commit -m "Auto-update F&O stocks list" || exit 0
+        git push
