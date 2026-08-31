@@ -1,71 +1,79 @@
 import os
-import requests
-import io
-import zipfile
-import datetime
-import pytz
+import glob
+import pandas as pd
 
-def download_raw_fo_bhavcopy(target_trade_days=160):
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': '*/*'
-    }
+def extract_current_month_expiry():
+    raw_folder = "raw_fo_data"
+    
+    # raw_fo_data फोल्डर की सभी CSV फाइलों को ढूंढें
+    csv_files = glob.glob(os.path.join(raw_folder, "*_Full_FO.csv"))
+    
+    if not csv_files:
+        print("❌ कोई भी CSV फाइल नहीं मिली। कृपया पहले डेटा डाउनलोड करें।")
+        return
 
-    os.makedirs("raw_fo_data", exist_ok=True)
-    ist_tz = pytz.timezone("Asia/Kolkata")
-    now_ist = datetime.datetime.now(ist_tz)
+    print(f"🔄 कुल {len(csv_files)} फाइलों को प्रोसेस किया जा रहा है...")
 
-    print(f"🚀 F&O Raw Data Download Started: Target = {target_trade_days} Active Trading Days")
-
-    saved_count = 0
-    days_back = 0
-
-    while saved_count < target_trade_days and days_back < 160:
-        target_date = now_ist - datetime.timedelta(days=days_back)
-        file_date_str = target_date.strftime("%Y-%m-%d")
+    for file_path in csv_files:
+        # फाइल नेम से ट्रेड तारीख निकालना
+        file_name = os.path.basename(file_path)
+        trade_date_str = file_name.split("_")[0]
         
-        out_file = f"raw_fo_data/{file_date_str}_Full_FO.csv"
+        try:
+            df = pd.read_csv(file_path)
+            df.columns = df.columns.str.strip() # कॉलम के नाम से स्पेस हटाएं
 
-        if os.path.exists(out_file):
-            print(f"⏩ [{saved_count + 1}/{target_trade_days}] Already Exists: {file_date_str}")
-            saved_count += 1
-            days_back += 1
-            continue
+            # 1. ट्रेड डेट और एक्सपायरी डेट का कॉलम पहचानें
+            date_col = None
+            expiry_col = None
 
-        date_ddmmyyyy = target_date.strftime("%d%m%Y")
-        date_ddmmmyyyy = target_date.strftime("%d%b%Y").upper()
-        year_str = target_date.strftime("%Y")
-        month_str = target_date.strftime("%b").upper()
-
-        # NSE Derivative URLs (New UDiFF Format & Historical Old Format)
-                urls = [
-                            f"https://archives.nseindia.com/content/fo/BhavCopy_NSE_FO_0_0_0_{date_str}_F_0000.csv.zip",
-            f"https://nsearchives.nseindia.com/content/fo/BhavCopy_NSE_FO_0_0_0_{date_str}_F_0000.csv.zip",
-            f"https://archives.nseindia.com/content/historical/DERIVATIVES/{year_str}/{month_str_upper}/fo{date_str_upper}bhav.csv.zip"
-        ]
-
-        downloaded = False
-        for url in urls:
-            try:
-                res = requests.get(url, headers=headers, timeout=10)
-                if res.status_code == 200 and len(res.content) > 1000:
-                    z = zipfile.ZipFile(io.BytesIO(res.content))
-                    csv_filename = z.namelist()[0]
-                    
-                    with open(out_file, "wb") as f:
-                        f.write(z.read(csv_filename))
-                        
-                    saved_count += 1
-                    print(f"✅ [{saved_count}/{target_trade_days}] Raw F&O Saved: {file_date_str}")
-                    downloaded = True
+            for col in ['TradDt', 'TIMESTAMP', 'TRAD_DT']:
+                if col in df.columns:
+                    date_col = col
                     break
-            except Exception:
+                    
+            for col in ['XpryDt', 'EXPIRY_DT', 'EXPIR_DATE']:
+                if col in df.columns:
+                    expiry_col = col
+                    break
+
+            if not date_col or not expiry_col:
+                print(f"⚠️ आवश्यक कॉलम नहीं मिले: {file_name}")
                 continue
 
-        if not downloaded:
-            print(f"⏩ Market Closed / No F&O File on: {file_date_str}")
+            # 2. डेट फॉर्मेट को 'Datetime' में बदलें
+            df[date_col] = pd.to_datetime(df[date_col])
+            df[expiry_col] = pd.to_datetime(df[expiry_col])
 
-        days_back += 1
+            # 3. ट्रेड डेट का साल और महीना निकालें
+            trade_year = df[date_col].dt.year
+            trade_month = df[date_col].dt.month
+
+            # 4. फिल्टर: सिर्फ वही डेटा रखें जिसकी एक्सपायरी डेट उसी महीने और साल की हो
+            current_month_df = df[
+                (df[expiry_col].dt.year == trade_year) & 
+                (df[expiry_col].dt.month == trade_month)
+            ]
+
+            if not current_month_df.empty:
+                # 5. डेटा में से उस महीने की अंतिम/अक्षरित एक्सपायरी डेट निकालें
+                actual_expiry_date = current_month_df[expiry_col].max().strftime("%Y-%m-%d")
+                
+                # नया फाइल नेम फॉर्मेट: YYYY-MM-DD_expire_date_YYYY-MM-DD.csv
+                output_path = os.path.join(raw_folder, f"{trade_date_str}_expire_date_{actual_expiry_date}.csv")
+                
+                # अगर फाइल पहले से मौजूद है तो स्किप करें
+                if os.path.exists(output_path):
+                    print(f"⏩ पहले से मौजूद है: {os.path.basename(output_path)}")
+                    continue
+
+                current_month_df.to_csv(output_path, index=False)
+                print(f"✅ सेव की गई: {os.path.basename(output_path)}")
+            else:
+                print(f"⚠️ कोई मैचिंग करंट मंथ डेटा नहीं मिला: {file_name}")
+
+        except Exception as e:
+            print(f"❌ एरर फाइल {file_name} में: {e}")
 
 if __name__ == "__main__":
-    download_raw_fo_bhavcopy(160)
+    extract_current_month_expiry()
