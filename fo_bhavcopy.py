@@ -1,79 +1,90 @@
+import requests
+import datetime
 import os
-import glob
 import pandas as pd
+import io
+import time
+import zoneinfo
 
-def extract_current_month_expiry():
-    raw_folder = "raw_fo_data"
+def fetch_fo_data(days_to_fetch=160):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': '*/*'
+    }
     
-    # raw_fo_data फोल्डर की सभी CSV फाइलों को ढूंढें
-    csv_files = glob.glob(os.path.join(raw_folder, "*_Full_FO.csv"))
+    # फोल्डर का नाम बदलकर raw_fo_data कर दिया गया है
+    output_folder = "raw_fo_data"
+    os.makedirs(output_folder, exist_ok=True)
     
-    if not csv_files:
-        print("❌ कोई भी CSV फाइल नहीं मिली। कृपया पहले डेटा डाउनलोड करें।")
-        return
+    ist_tz = zoneinfo.ZoneInfo("Asia/Kolkata")
+    now_ist = datetime.datetime.now(ist_tz)
 
-    print(f"🔄 कुल {len(csv_files)} फाइलों को प्रोसेस किया जा रहा है...")
+    print(f"🚀 F&O Raw Data Fetching Started (Fetching Active Trading Days)...")
 
-    for file_path in csv_files:
-        # फाइल नेम से ट्रेड तारीख निकालना
-        file_name = os.path.basename(file_path)
-        trade_date_str = file_name.split("_")[0]
+    saved_count = 0
+
+    for days_back in range(0, days_to_fetch):
+        target_date = now_ist - datetime.timedelta(days=days_back)
+
+        file_date_str = target_date.strftime("%Y-%m-%d") # Format: YYYY-MM-DD
+        output_path = os.path.join(output_folder, f"{file_date_str}_Full_FO.csv")
+
+        # अगर फ़ाइल पहले से डाउनलोड है
+        if os.path.exists(output_path):
+            print(f"⏩ File Already Exists: {file_date_str}")
+            saved_count += 1
+            continue
+
+        date_str = target_date.strftime("%Y%m%d")             
+        date_str_upper = target_date.strftime("%d%b%Y").upper() 
+        month_str_upper = target_date.strftime("%b").upper()     
+        year_str = target_date.strftime("%Y")                    
         
-        try:
-            df = pd.read_csv(file_path)
-            df.columns = df.columns.str.strip() # कॉलम के नाम से स्पेस हटाएं
+        # NSE F&O UDiFF + Legacy URLs
+        urls = [
+            f"https://archives.nseindia.com/content/fo/BhavCopy_NSE_FO_0_0_0_{date_str}_F_0000.csv.zip",
+            f"https://nsearchives.nseindia.com/content/fo/BhavCopy_NSE_FO_0_0_0_{date_str}_F_0000.csv.zip",
+            f"https://archives.nseindia.com/content/historical/DERIVATIVES/{year_str}/{month_str_upper}/fo{date_str_upper}bhav.csv.zip"
+        ]
 
-            # 1. ट्रेड डेट और एक्सपायरी डेट का कॉलम पहचानें
-            date_col = None
-            expiry_col = None
-
-            for col in ['TradDt', 'TIMESTAMP', 'TRAD_DT']:
-                if col in df.columns:
-                    date_col = col
-                    break
-                    
-            for col in ['XpryDt', 'EXPIRY_DT', 'EXPIR_DATE']:
-                if col in df.columns:
-                    expiry_col = col
-                    break
-
-            if not date_col or not expiry_col:
-                print(f"⚠️ आवश्यक कॉलम नहीं मिले: {file_name}")
-                continue
-
-            # 2. डेट फॉर्मेट को 'Datetime' में बदलें
-            df[date_col] = pd.to_datetime(df[date_col])
-            df[expiry_col] = pd.to_datetime(df[expiry_col])
-
-            # 3. ट्रेड डेट का साल और महीना निकालें
-            trade_year = df[date_col].dt.year
-            trade_month = df[date_col].dt.month
-
-            # 4. फिल्टर: सिर्फ वही डेटा रखें जिसकी एक्सपायरी डेट उसी महीने और साल की हो
-            current_month_df = df[
-                (df[expiry_col].dt.year == trade_year) & 
-                (df[expiry_col].dt.month == trade_month)
-            ]
-
-            if not current_month_df.empty:
-                # 5. डेटा में से उस महीने की अंतिम/अक्षरित एक्सपायरी डेट निकालें
-                actual_expiry_date = current_month_df[expiry_col].max().strftime("%Y-%m-%d")
+        downloaded = False
+        for url in urls:
+            try:
+                response = requests.get(url, headers=headers, timeout=10)
                 
-                # नया फाइल नेम फॉर्मेट: YYYY-MM-DD_expire_date_YYYY-MM-DD.csv
-                output_path = os.path.join(raw_folder, f"{trade_date_str}_expire_date_{actual_expiry_date}.csv")
-                
-                # अगर फाइल पहले से मौजूद है तो स्किप करें
-                if os.path.exists(output_path):
-                    print(f"⏩ पहले से मौजूद है: {os.path.basename(output_path)}")
-                    continue
+                if response.status_code == 200 and len(response.content) > 1000:
+                    df = pd.read_csv(io.BytesIO(response.content), compression='zip')
+                    df.columns = df.columns.str.strip()
 
-                current_month_df.to_csv(output_path, index=False)
-                print(f"✅ सेव की गई: {os.path.basename(output_path)}")
-            else:
-                print(f"⚠️ कोई मैचिंग करंट मंथ डेटा नहीं मिला: {file_name}")
+                    if len(df) > 100:
+                        # Date Validation Logic
+                        date_col = None
+                        for col in ['TradDt', 'TIMESTAMP', 'TRAD_DT']:
+                            if col in df.columns:
+                                date_col = col
+                                break
 
-        except Exception as e:
-            print(f"❌ एरर फाइल {file_name} में: {e}")
+                        if date_col:
+                            file_actual_date = pd.to_datetime(df[date_col].iloc[0]).strftime("%Y-%m-%d")
+                            
+                            # छुट्टी के दिन NSE द्वारा पिछला डेटा रिडायरेक्ट करने पर स्किप करें
+                            if file_actual_date != file_date_str:
+                                print(f"⚠️ Holiday/Closed Market for {file_date_str}! Skipping.")
+                                break
+
+                        df.to_csv(output_path, index=False)
+                        saved_count += 1
+                        print(f"✅ [{saved_count}] Real F&O Data Saved: {file_date_str}")
+                        downloaded = True
+                        break
+
+            except Exception:
+                pass
+
+        if not downloaded:
+            print(f"⏩ Market Closed / No Data for: {file_date_str}")
+
+        time.sleep(0.4)
 
 if __name__ == "__main__":
-    extract_current_month_expiry()
+    fetch_fo_data(160)
